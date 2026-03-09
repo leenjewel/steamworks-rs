@@ -110,6 +110,7 @@ pub const _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES_COUNT: u32 = 0;
 pub const _CRT_SECURE_CPP_OVERLOAD_SECURE_NAMES: u32 = 1;
 pub const _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES_MEMORY: u32 = 0;
 pub const _CRT_SECURE_CPP_OVERLOAD_SECURE_NAMES_MEMORY: u32 = 0;
+pub const _STATIC_INLINE_UCRT_FUNCTIONS: u32 = 1;
 pub const EPERM: u32 = 1;
 pub const ENOENT: u32 = 2;
 pub const ESRCH: u32 = 3;
@@ -192,7 +193,7 @@ pub const ETIMEDOUT: u32 = 138;
 pub const ETXTBSY: u32 = 139;
 pub const EWOULDBLOCK: u32 = 140;
 pub const _NLSCMPERROR: u32 = 2147483647;
-pub const STEAMCLIENT_INTERFACE_VERSION: &[u8; 15] = b"SteamClient021\0";
+pub const STEAMCLIENT_INTERFACE_VERSION: &[u8; 15] = b"SteamClient023\0";
 pub const STEAMUSER_INTERFACE_VERSION: &[u8; 13] = b"SteamUser023\0";
 pub const STEAMFRIENDS_INTERFACE_VERSION: &[u8; 16] = b"SteamFriends018\0";
 pub const STEAMUTILS_INTERFACE_VERSION: &[u8; 14] = b"SteamUtils010\0";
@@ -228,7 +229,6 @@ pub const SYS_OPEN: u32 = 20;
 pub const k_nMaxLobbyKeyLength: u32 = 255;
 pub const STEAMMATCHMAKING_INTERFACE_VERSION: &[u8; 20] = b"SteamMatchMaking009\0";
 pub const STEAMMATCHMAKINGSERVERS_INTERFACE_VERSION: &[u8; 27] = b"SteamMatchMakingServers002\0";
-pub const STEAMGAMESEARCH_INTERFACE_VERSION: &[u8; 24] = b"SteamMatchGameSearch001\0";
 pub const STEAMPARTIES_INTERFACE_VERSION: &[u8; 16] = b"SteamParties002\0";
 pub const STEAMREMOTESTORAGE_INTERFACE_VERSION: &[u8; 40] =
     b"STEAMREMOTESTORAGE_INTERFACE_VERSION016\0";
@@ -239,10 +239,6 @@ pub const INVALID_SCREENSHOT_HANDLE: u32 = 0;
 pub const STEAMSCREENSHOTS_INTERFACE_VERSION: &[u8; 38] =
     b"STEAMSCREENSHOTS_INTERFACE_VERSION003\0";
 pub const STEAMMUSIC_INTERFACE_VERSION: &[u8; 32] = b"STEAMMUSIC_INTERFACE_VERSION001\0";
-pub const k_SteamMusicNameMaxLength: u32 = 255;
-pub const k_SteamMusicPNGMaxLength: u32 = 65535;
-pub const STEAMMUSICREMOTE_INTERFACE_VERSION: &[u8; 38] =
-    b"STEAMMUSICREMOTE_INTERFACE_VERSION001\0";
 pub const INVALID_HTTPREQUEST_HANDLE: u32 = 0;
 pub const INVALID_HTTPCOOKIE_HANDLE: u32 = 0;
 pub const STEAMHTTP_INTERFACE_VERSION: &[u8; 31] = b"STEAMHTTP_INTERFACE_VERSION003\0";
@@ -539,6 +535,7 @@ pub enum EResult {
     k_EResultNotSupported = 128,
     k_EResultFamilySizeLimitExceeded = 129,
     k_EResultOfflineAppCacheInvalid = 130,
+    k_EResultTryLater = 131,
 }
 #[repr(i32)]
 #[non_exhaustive]
@@ -818,6 +815,10 @@ impl EMarketNotAllowedReasonFlags {
 impl EMarketNotAllowedReasonFlags {
     pub const k_EMarketNotAllowedReason_AcceptedWalletGift: EMarketNotAllowedReasonFlags =
         EMarketNotAllowedReasonFlags(32768);
+}
+impl EMarketNotAllowedReasonFlags {
+    pub const k_EMarketNotAllowedReason_TradeCooldown: EMarketNotAllowedReasonFlags =
+        EMarketNotAllowedReasonFlags(65536);
 }
 impl ::std::ops::BitOr<EMarketNotAllowedReasonFlags> for EMarketNotAllowedReasonFlags {
     type Output = Self;
@@ -1346,30 +1347,6 @@ impl CGameID {
 pub const k_cchGameExtraInfoMax: ::std::os::raw::c_int = 64;
 pub type PFNPreMinidumpCallback =
     ::std::option::Option<unsafe extern "C" fn(context: *mut ::std::os::raw::c_void)>;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum EGameSearchErrorCode_t {
-    k_EGameSearchErrorCode_OK = 1,
-    k_EGameSearchErrorCode_Failed_Search_Already_In_Progress = 2,
-    k_EGameSearchErrorCode_Failed_No_Search_In_Progress = 3,
-    k_EGameSearchErrorCode_Failed_Not_Lobby_Leader = 4,
-    k_EGameSearchErrorCode_Failed_No_Host_Available = 5,
-    k_EGameSearchErrorCode_Failed_Search_Params_Invalid = 6,
-    k_EGameSearchErrorCode_Failed_Offline = 7,
-    k_EGameSearchErrorCode_Failed_NotAuthorized = 8,
-    k_EGameSearchErrorCode_Failed_Unknown_Error = 9,
-}
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum EPlayerResult_t {
-    k_EPlayerResultFailedToConnect = 1,
-    k_EPlayerResultAbandoned = 2,
-    k_EPlayerResultKicked = 3,
-    k_EPlayerResultIncomplete = 4,
-    k_EPlayerResultCompleted = 5,
-}
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -2025,92 +2002,84 @@ pub const k_iSteamMusicCallbacks: _bindgen_ty_26 = _bindgen_ty_26::k_iSteamMusic
 pub enum _bindgen_ty_26 {
     k_iSteamMusicCallbacks = 4000,
 }
-pub const k_iSteamMusicRemoteCallbacks: _bindgen_ty_27 =
-    _bindgen_ty_27::k_iSteamMusicRemoteCallbacks;
+pub const k_iSteamGameNotificationCallbacks: _bindgen_ty_27 =
+    _bindgen_ty_27::k_iSteamGameNotificationCallbacks;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_27 {
-    k_iSteamMusicRemoteCallbacks = 4100,
+    k_iSteamGameNotificationCallbacks = 4400,
 }
-pub const k_iSteamGameNotificationCallbacks: _bindgen_ty_28 =
-    _bindgen_ty_28::k_iSteamGameNotificationCallbacks;
+pub const k_iSteamHTMLSurfaceCallbacks: _bindgen_ty_28 =
+    _bindgen_ty_28::k_iSteamHTMLSurfaceCallbacks;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_28 {
-    k_iSteamGameNotificationCallbacks = 4400,
+    k_iSteamHTMLSurfaceCallbacks = 4500,
 }
-pub const k_iSteamHTMLSurfaceCallbacks: _bindgen_ty_29 =
-    _bindgen_ty_29::k_iSteamHTMLSurfaceCallbacks;
+pub const k_iSteamVideoCallbacks: _bindgen_ty_29 = _bindgen_ty_29::k_iSteamVideoCallbacks;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_29 {
-    k_iSteamHTMLSurfaceCallbacks = 4500,
+    k_iSteamVideoCallbacks = 4600,
 }
-pub const k_iSteamVideoCallbacks: _bindgen_ty_30 = _bindgen_ty_30::k_iSteamVideoCallbacks;
+pub const k_iSteamInventoryCallbacks: _bindgen_ty_30 = _bindgen_ty_30::k_iSteamInventoryCallbacks;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_30 {
-    k_iSteamVideoCallbacks = 4600,
+    k_iSteamInventoryCallbacks = 4700,
 }
-pub const k_iSteamInventoryCallbacks: _bindgen_ty_31 = _bindgen_ty_31::k_iSteamInventoryCallbacks;
+pub const k_ISteamParentalSettingsCallbacks: _bindgen_ty_31 =
+    _bindgen_ty_31::k_ISteamParentalSettingsCallbacks;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_31 {
-    k_iSteamInventoryCallbacks = 4700,
+    k_ISteamParentalSettingsCallbacks = 5000,
 }
-pub const k_ISteamParentalSettingsCallbacks: _bindgen_ty_32 =
-    _bindgen_ty_32::k_ISteamParentalSettingsCallbacks;
+pub const k_iSteamGameSearchCallbacks: _bindgen_ty_32 = _bindgen_ty_32::k_iSteamGameSearchCallbacks;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_32 {
-    k_ISteamParentalSettingsCallbacks = 5000,
+    k_iSteamGameSearchCallbacks = 5200,
 }
-pub const k_iSteamGameSearchCallbacks: _bindgen_ty_33 = _bindgen_ty_33::k_iSteamGameSearchCallbacks;
+pub const k_iSteamPartiesCallbacks: _bindgen_ty_33 = _bindgen_ty_33::k_iSteamPartiesCallbacks;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_33 {
-    k_iSteamGameSearchCallbacks = 5200,
+    k_iSteamPartiesCallbacks = 5300,
 }
-pub const k_iSteamPartiesCallbacks: _bindgen_ty_34 = _bindgen_ty_34::k_iSteamPartiesCallbacks;
+pub const k_iSteamSTARCallbacks: _bindgen_ty_34 = _bindgen_ty_34::k_iSteamSTARCallbacks;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_34 {
-    k_iSteamPartiesCallbacks = 5300,
+    k_iSteamSTARCallbacks = 5500,
 }
-pub const k_iSteamSTARCallbacks: _bindgen_ty_35 = _bindgen_ty_35::k_iSteamSTARCallbacks;
+pub const k_iSteamRemotePlayCallbacks: _bindgen_ty_35 = _bindgen_ty_35::k_iSteamRemotePlayCallbacks;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_35 {
-    k_iSteamSTARCallbacks = 5500,
+    k_iSteamRemotePlayCallbacks = 5700,
 }
-pub const k_iSteamRemotePlayCallbacks: _bindgen_ty_36 = _bindgen_ty_36::k_iSteamRemotePlayCallbacks;
+pub const k_iSteamChatCallbacks: _bindgen_ty_36 = _bindgen_ty_36::k_iSteamChatCallbacks;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_36 {
-    k_iSteamRemotePlayCallbacks = 5700,
+    k_iSteamChatCallbacks = 5900,
 }
-pub const k_iSteamChatCallbacks: _bindgen_ty_37 = _bindgen_ty_37::k_iSteamChatCallbacks;
+pub const k_iSteamTimelineCallbacks: _bindgen_ty_37 = _bindgen_ty_37::k_iSteamTimelineCallbacks;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_37 {
-    k_iSteamChatCallbacks = 5900,
-}
-pub const k_iSteamTimelineCallbacks: _bindgen_ty_38 = _bindgen_ty_38::k_iSteamTimelineCallbacks;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum _bindgen_ty_38 {
     k_iSteamTimelineCallbacks = 6000,
 }
 #[repr(C)]
@@ -3158,37 +3127,37 @@ fn bindgen_test_layout_FriendGameInfo_t() {
 }
 pub const k_usFriendGameInfoQueryPort_NotInitialized: uint16 = 65535;
 pub const k_usFriendGameInfoQueryPort_Error: uint16 = 65534;
-pub const k_cchPersonaNameMax: _bindgen_ty_39 = _bindgen_ty_39::k_cchPersonaNameMax;
-pub const k_cwchPersonaNameMax: _bindgen_ty_39 = _bindgen_ty_39::k_cwchPersonaNameMax;
+pub const k_cchPersonaNameMax: _bindgen_ty_38 = _bindgen_ty_38::k_cchPersonaNameMax;
+pub const k_cwchPersonaNameMax: _bindgen_ty_38 = _bindgen_ty_38::k_cwchPersonaNameMax;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum _bindgen_ty_39 {
+pub enum _bindgen_ty_38 {
     k_cchPersonaNameMax = 128,
     k_cwchPersonaNameMax = 32,
 }
 pub const k_cubChatMetadataMax: uint32 = 8192;
-pub const k_cchMaxRichPresenceKeys: _bindgen_ty_40 = _bindgen_ty_40::k_cchMaxRichPresenceKeys;
+pub const k_cchMaxRichPresenceKeys: _bindgen_ty_39 = _bindgen_ty_39::k_cchMaxRichPresenceKeys;
+#[repr(i32)]
+#[non_exhaustive]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum _bindgen_ty_39 {
+    k_cchMaxRichPresenceKeys = 30,
+}
+pub const k_cchMaxRichPresenceKeyLength: _bindgen_ty_40 =
+    _bindgen_ty_40::k_cchMaxRichPresenceKeyLength;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_40 {
-    k_cchMaxRichPresenceKeys = 30,
+    k_cchMaxRichPresenceKeyLength = 64,
 }
-pub const k_cchMaxRichPresenceKeyLength: _bindgen_ty_41 =
-    _bindgen_ty_41::k_cchMaxRichPresenceKeyLength;
+pub const k_cchMaxRichPresenceValueLength: _bindgen_ty_41 =
+    _bindgen_ty_41::k_cchMaxRichPresenceValueLength;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_41 {
-    k_cchMaxRichPresenceKeyLength = 64,
-}
-pub const k_cchMaxRichPresenceValueLength: _bindgen_ty_42 =
-    _bindgen_ty_42::k_cchMaxRichPresenceValueLength;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum _bindgen_ty_42 {
     k_cchMaxRichPresenceValueLength = 256,
 }
 impl EOverlayToStoreFlag {
@@ -5524,26 +5493,6 @@ pub enum EChatMemberStateChange {
     k_EChatMemberStateChangeKicked = 8,
     k_EChatMemberStateChangeBanned = 16,
 }
-#[repr(C)]
-pub struct ISteamGameSearch__bindgen_vtable(::std::os::raw::c_void);
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct ISteamGameSearch {
-    pub vtable_: *const ISteamGameSearch__bindgen_vtable,
-}
-#[test]
-fn bindgen_test_layout_ISteamGameSearch() {
-    assert_eq!(
-        ::std::mem::size_of::<ISteamGameSearch>(),
-        8usize,
-        concat!("Size of: ", stringify!(ISteamGameSearch))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<ISteamGameSearch>(),
-        8usize,
-        concat!("Alignment of ", stringify!(ISteamGameSearch))
-    );
-}
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -6316,588 +6265,6 @@ fn bindgen_test_layout_FavoritesListAccountsUpdated_t() {
             stringify!(FavoritesListAccountsUpdated_t),
             "::",
             stringify!(m_eResult)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct SearchForGameProgressCallback_t {
-    pub m_ullSearchID: uint64,
-    pub m_eResult: EResult,
-    pub m_lobbyID: CSteamID,
-    pub m_steamIDEndedSearch: CSteamID,
-    pub m_nSecondsRemainingEstimate: int32,
-    pub m_cPlayersSearching: int32,
-}
-pub const SearchForGameProgressCallback_t_k_iCallback:
-    SearchForGameProgressCallback_t__bindgen_ty_1 =
-    SearchForGameProgressCallback_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum SearchForGameProgressCallback_t__bindgen_ty_1 {
-    k_iCallback = 5201,
-}
-#[test]
-fn bindgen_test_layout_SearchForGameProgressCallback_t() {
-    const UNINIT: ::std::mem::MaybeUninit<SearchForGameProgressCallback_t> =
-        ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<SearchForGameProgressCallback_t>(),
-        40usize,
-        concat!("Size of: ", stringify!(SearchForGameProgressCallback_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<SearchForGameProgressCallback_t>(),
-        8usize,
-        concat!("Alignment of ", stringify!(SearchForGameProgressCallback_t))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_ullSearchID) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SearchForGameProgressCallback_t),
-            "::",
-            stringify!(m_ullSearchID)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_eResult) as usize - ptr as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SearchForGameProgressCallback_t),
-            "::",
-            stringify!(m_eResult)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_lobbyID) as usize - ptr as usize },
-        12usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SearchForGameProgressCallback_t),
-            "::",
-            stringify!(m_lobbyID)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_steamIDEndedSearch) as usize - ptr as usize },
-        20usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SearchForGameProgressCallback_t),
-            "::",
-            stringify!(m_steamIDEndedSearch)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_nSecondsRemainingEstimate) as usize - ptr as usize },
-        28usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SearchForGameProgressCallback_t),
-            "::",
-            stringify!(m_nSecondsRemainingEstimate)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_cPlayersSearching) as usize - ptr as usize },
-        32usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SearchForGameProgressCallback_t),
-            "::",
-            stringify!(m_cPlayersSearching)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct SearchForGameResultCallback_t {
-    pub m_ullSearchID: uint64,
-    pub m_eResult: EResult,
-    pub m_nCountPlayersInGame: int32,
-    pub m_nCountAcceptedGame: int32,
-    pub m_steamIDHost: CSteamID,
-    pub m_bFinalCallback: bool,
-}
-pub const SearchForGameResultCallback_t_k_iCallback: SearchForGameResultCallback_t__bindgen_ty_1 =
-    SearchForGameResultCallback_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum SearchForGameResultCallback_t__bindgen_ty_1 {
-    k_iCallback = 5202,
-}
-#[test]
-fn bindgen_test_layout_SearchForGameResultCallback_t() {
-    const UNINIT: ::std::mem::MaybeUninit<SearchForGameResultCallback_t> =
-        ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<SearchForGameResultCallback_t>(),
-        32usize,
-        concat!("Size of: ", stringify!(SearchForGameResultCallback_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<SearchForGameResultCallback_t>(),
-        8usize,
-        concat!("Alignment of ", stringify!(SearchForGameResultCallback_t))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_ullSearchID) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SearchForGameResultCallback_t),
-            "::",
-            stringify!(m_ullSearchID)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_eResult) as usize - ptr as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SearchForGameResultCallback_t),
-            "::",
-            stringify!(m_eResult)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_nCountPlayersInGame) as usize - ptr as usize },
-        12usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SearchForGameResultCallback_t),
-            "::",
-            stringify!(m_nCountPlayersInGame)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_nCountAcceptedGame) as usize - ptr as usize },
-        16usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SearchForGameResultCallback_t),
-            "::",
-            stringify!(m_nCountAcceptedGame)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_steamIDHost) as usize - ptr as usize },
-        20usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SearchForGameResultCallback_t),
-            "::",
-            stringify!(m_steamIDHost)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_bFinalCallback) as usize - ptr as usize },
-        28usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SearchForGameResultCallback_t),
-            "::",
-            stringify!(m_bFinalCallback)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct RequestPlayersForGameProgressCallback_t {
-    pub m_eResult: EResult,
-    pub m_ullSearchID: uint64,
-}
-pub const RequestPlayersForGameProgressCallback_t_k_iCallback:
-    RequestPlayersForGameProgressCallback_t__bindgen_ty_1 =
-    RequestPlayersForGameProgressCallback_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum RequestPlayersForGameProgressCallback_t__bindgen_ty_1 {
-    k_iCallback = 5211,
-}
-#[test]
-fn bindgen_test_layout_RequestPlayersForGameProgressCallback_t() {
-    const UNINIT: ::std::mem::MaybeUninit<RequestPlayersForGameProgressCallback_t> =
-        ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<RequestPlayersForGameProgressCallback_t>(),
-        16usize,
-        concat!(
-            "Size of: ",
-            stringify!(RequestPlayersForGameProgressCallback_t)
-        )
-    );
-    assert_eq!(
-        ::std::mem::align_of::<RequestPlayersForGameProgressCallback_t>(),
-        8usize,
-        concat!(
-            "Alignment of ",
-            stringify!(RequestPlayersForGameProgressCallback_t)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_eResult) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameProgressCallback_t),
-            "::",
-            stringify!(m_eResult)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_ullSearchID) as usize - ptr as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameProgressCallback_t),
-            "::",
-            stringify!(m_ullSearchID)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct RequestPlayersForGameResultCallback_t {
-    pub m_eResult: EResult,
-    pub m_ullSearchID: uint64,
-    pub m_SteamIDPlayerFound: CSteamID,
-    pub m_SteamIDLobby: CSteamID,
-    pub m_ePlayerAcceptState: RequestPlayersForGameResultCallback_t_PlayerAcceptState_t,
-    pub m_nPlayerIndex: int32,
-    pub m_nTotalPlayersFound: int32,
-    pub m_nTotalPlayersAcceptedGame: int32,
-    pub m_nSuggestedTeamIndex: int32,
-    pub m_ullUniqueGameID: uint64,
-}
-pub const RequestPlayersForGameResultCallback_t_k_iCallback:
-    RequestPlayersForGameResultCallback_t__bindgen_ty_1 =
-    RequestPlayersForGameResultCallback_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum RequestPlayersForGameResultCallback_t__bindgen_ty_1 {
-    k_iCallback = 5212,
-}
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum RequestPlayersForGameResultCallback_t_PlayerAcceptState_t {
-    k_EStateUnknown = 0,
-    k_EStatePlayerAccepted = 1,
-    k_EStatePlayerDeclined = 2,
-}
-#[test]
-fn bindgen_test_layout_RequestPlayersForGameResultCallback_t() {
-    const UNINIT: ::std::mem::MaybeUninit<RequestPlayersForGameResultCallback_t> =
-        ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<RequestPlayersForGameResultCallback_t>(),
-        64usize,
-        concat!(
-            "Size of: ",
-            stringify!(RequestPlayersForGameResultCallback_t)
-        )
-    );
-    assert_eq!(
-        ::std::mem::align_of::<RequestPlayersForGameResultCallback_t>(),
-        8usize,
-        concat!(
-            "Alignment of ",
-            stringify!(RequestPlayersForGameResultCallback_t)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_eResult) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameResultCallback_t),
-            "::",
-            stringify!(m_eResult)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_ullSearchID) as usize - ptr as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameResultCallback_t),
-            "::",
-            stringify!(m_ullSearchID)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_SteamIDPlayerFound) as usize - ptr as usize },
-        16usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameResultCallback_t),
-            "::",
-            stringify!(m_SteamIDPlayerFound)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_SteamIDLobby) as usize - ptr as usize },
-        24usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameResultCallback_t),
-            "::",
-            stringify!(m_SteamIDLobby)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_ePlayerAcceptState) as usize - ptr as usize },
-        32usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameResultCallback_t),
-            "::",
-            stringify!(m_ePlayerAcceptState)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_nPlayerIndex) as usize - ptr as usize },
-        36usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameResultCallback_t),
-            "::",
-            stringify!(m_nPlayerIndex)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_nTotalPlayersFound) as usize - ptr as usize },
-        40usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameResultCallback_t),
-            "::",
-            stringify!(m_nTotalPlayersFound)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_nTotalPlayersAcceptedGame) as usize - ptr as usize },
-        44usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameResultCallback_t),
-            "::",
-            stringify!(m_nTotalPlayersAcceptedGame)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_nSuggestedTeamIndex) as usize - ptr as usize },
-        48usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameResultCallback_t),
-            "::",
-            stringify!(m_nSuggestedTeamIndex)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_ullUniqueGameID) as usize - ptr as usize },
-        56usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameResultCallback_t),
-            "::",
-            stringify!(m_ullUniqueGameID)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct RequestPlayersForGameFinalResultCallback_t {
-    pub m_eResult: EResult,
-    pub m_ullSearchID: uint64,
-    pub m_ullUniqueGameID: uint64,
-}
-pub const RequestPlayersForGameFinalResultCallback_t_k_iCallback:
-    RequestPlayersForGameFinalResultCallback_t__bindgen_ty_1 =
-    RequestPlayersForGameFinalResultCallback_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum RequestPlayersForGameFinalResultCallback_t__bindgen_ty_1 {
-    k_iCallback = 5213,
-}
-#[test]
-fn bindgen_test_layout_RequestPlayersForGameFinalResultCallback_t() {
-    const UNINIT: ::std::mem::MaybeUninit<RequestPlayersForGameFinalResultCallback_t> =
-        ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<RequestPlayersForGameFinalResultCallback_t>(),
-        24usize,
-        concat!(
-            "Size of: ",
-            stringify!(RequestPlayersForGameFinalResultCallback_t)
-        )
-    );
-    assert_eq!(
-        ::std::mem::align_of::<RequestPlayersForGameFinalResultCallback_t>(),
-        8usize,
-        concat!(
-            "Alignment of ",
-            stringify!(RequestPlayersForGameFinalResultCallback_t)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_eResult) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameFinalResultCallback_t),
-            "::",
-            stringify!(m_eResult)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_ullSearchID) as usize - ptr as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameFinalResultCallback_t),
-            "::",
-            stringify!(m_ullSearchID)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_ullUniqueGameID) as usize - ptr as usize },
-        16usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(RequestPlayersForGameFinalResultCallback_t),
-            "::",
-            stringify!(m_ullUniqueGameID)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct SubmitPlayerResultResultCallback_t {
-    pub m_eResult: EResult,
-    pub ullUniqueGameID: uint64,
-    pub steamIDPlayer: CSteamID,
-}
-pub const SubmitPlayerResultResultCallback_t_k_iCallback:
-    SubmitPlayerResultResultCallback_t__bindgen_ty_1 =
-    SubmitPlayerResultResultCallback_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum SubmitPlayerResultResultCallback_t__bindgen_ty_1 {
-    k_iCallback = 5214,
-}
-#[test]
-fn bindgen_test_layout_SubmitPlayerResultResultCallback_t() {
-    const UNINIT: ::std::mem::MaybeUninit<SubmitPlayerResultResultCallback_t> =
-        ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<SubmitPlayerResultResultCallback_t>(),
-        24usize,
-        concat!("Size of: ", stringify!(SubmitPlayerResultResultCallback_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<SubmitPlayerResultResultCallback_t>(),
-        8usize,
-        concat!(
-            "Alignment of ",
-            stringify!(SubmitPlayerResultResultCallback_t)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_eResult) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SubmitPlayerResultResultCallback_t),
-            "::",
-            stringify!(m_eResult)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).ullUniqueGameID) as usize - ptr as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SubmitPlayerResultResultCallback_t),
-            "::",
-            stringify!(ullUniqueGameID)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).steamIDPlayer) as usize - ptr as usize },
-        16usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(SubmitPlayerResultResultCallback_t),
-            "::",
-            stringify!(steamIDPlayer)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct EndGameResultCallback_t {
-    pub m_eResult: EResult,
-    pub ullUniqueGameID: uint64,
-}
-pub const EndGameResultCallback_t_k_iCallback: EndGameResultCallback_t__bindgen_ty_1 =
-    EndGameResultCallback_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum EndGameResultCallback_t__bindgen_ty_1 {
-    k_iCallback = 5215,
-}
-#[test]
-fn bindgen_test_layout_EndGameResultCallback_t() {
-    const UNINIT: ::std::mem::MaybeUninit<EndGameResultCallback_t> =
-        ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<EndGameResultCallback_t>(),
-        16usize,
-        concat!("Size of: ", stringify!(EndGameResultCallback_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<EndGameResultCallback_t>(),
-        8usize,
-        concat!("Alignment of ", stringify!(EndGameResultCallback_t))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_eResult) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(EndGameResultCallback_t),
-            "::",
-            stringify!(m_eResult)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).ullUniqueGameID) as usize - ptr as usize },
-        8usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(EndGameResultCallback_t),
-            "::",
-            stringify!(ullUniqueGameID)
         )
     );
 }
@@ -9322,25 +8689,25 @@ fn bindgen_test_layout_RemoteStorageLocalFileChange_t() {
         concat!("Alignment of ", stringify!(RemoteStorageLocalFileChange_t))
     );
 }
-pub const k_cchStatNameMax: _bindgen_ty_43 = _bindgen_ty_43::k_cchStatNameMax;
+pub const k_cchStatNameMax: _bindgen_ty_42 = _bindgen_ty_42::k_cchStatNameMax;
+#[repr(i32)]
+#[non_exhaustive]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum _bindgen_ty_42 {
+    k_cchStatNameMax = 128,
+}
+pub const k_cchLeaderboardNameMax: _bindgen_ty_43 = _bindgen_ty_43::k_cchLeaderboardNameMax;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_43 {
-    k_cchStatNameMax = 128,
+    k_cchLeaderboardNameMax = 128,
 }
-pub const k_cchLeaderboardNameMax: _bindgen_ty_44 = _bindgen_ty_44::k_cchLeaderboardNameMax;
+pub const k_cLeaderboardDetailsMax: _bindgen_ty_44 = _bindgen_ty_44::k_cLeaderboardDetailsMax;
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum _bindgen_ty_44 {
-    k_cchLeaderboardNameMax = 128,
-}
-pub const k_cLeaderboardDetailsMax: _bindgen_ty_45 = _bindgen_ty_45::k_cLeaderboardDetailsMax;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum _bindgen_ty_45 {
     k_cLeaderboardDetailsMax = 64,
 }
 pub type SteamLeaderboard_t = uint64;
@@ -11022,484 +10389,6 @@ fn bindgen_test_layout_VolumeHasChanged_t() {
         )
     );
 }
-#[repr(C)]
-pub struct ISteamMusicRemote__bindgen_vtable(::std::os::raw::c_void);
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct ISteamMusicRemote {
-    pub vtable_: *const ISteamMusicRemote__bindgen_vtable,
-}
-#[test]
-fn bindgen_test_layout_ISteamMusicRemote() {
-    assert_eq!(
-        ::std::mem::size_of::<ISteamMusicRemote>(),
-        8usize,
-        concat!("Size of: ", stringify!(ISteamMusicRemote))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<ISteamMusicRemote>(),
-        8usize,
-        concat!("Alignment of ", stringify!(ISteamMusicRemote))
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct MusicPlayerRemoteWillActivate_t {
-    pub _address: u8,
-}
-pub const MusicPlayerRemoteWillActivate_t_k_iCallback:
-    MusicPlayerRemoteWillActivate_t__bindgen_ty_1 =
-    MusicPlayerRemoteWillActivate_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum MusicPlayerRemoteWillActivate_t__bindgen_ty_1 {
-    k_iCallback = 4101,
-}
-#[test]
-fn bindgen_test_layout_MusicPlayerRemoteWillActivate_t() {
-    assert_eq!(
-        ::std::mem::size_of::<MusicPlayerRemoteWillActivate_t>(),
-        1usize,
-        concat!("Size of: ", stringify!(MusicPlayerRemoteWillActivate_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<MusicPlayerRemoteWillActivate_t>(),
-        1usize,
-        concat!("Alignment of ", stringify!(MusicPlayerRemoteWillActivate_t))
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct MusicPlayerRemoteWillDeactivate_t {
-    pub _address: u8,
-}
-pub const MusicPlayerRemoteWillDeactivate_t_k_iCallback:
-    MusicPlayerRemoteWillDeactivate_t__bindgen_ty_1 =
-    MusicPlayerRemoteWillDeactivate_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum MusicPlayerRemoteWillDeactivate_t__bindgen_ty_1 {
-    k_iCallback = 4102,
-}
-#[test]
-fn bindgen_test_layout_MusicPlayerRemoteWillDeactivate_t() {
-    assert_eq!(
-        ::std::mem::size_of::<MusicPlayerRemoteWillDeactivate_t>(),
-        1usize,
-        concat!("Size of: ", stringify!(MusicPlayerRemoteWillDeactivate_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<MusicPlayerRemoteWillDeactivate_t>(),
-        1usize,
-        concat!(
-            "Alignment of ",
-            stringify!(MusicPlayerRemoteWillDeactivate_t)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct MusicPlayerRemoteToFront_t {
-    pub _address: u8,
-}
-pub const MusicPlayerRemoteToFront_t_k_iCallback: MusicPlayerRemoteToFront_t__bindgen_ty_1 =
-    MusicPlayerRemoteToFront_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum MusicPlayerRemoteToFront_t__bindgen_ty_1 {
-    k_iCallback = 4103,
-}
-#[test]
-fn bindgen_test_layout_MusicPlayerRemoteToFront_t() {
-    assert_eq!(
-        ::std::mem::size_of::<MusicPlayerRemoteToFront_t>(),
-        1usize,
-        concat!("Size of: ", stringify!(MusicPlayerRemoteToFront_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<MusicPlayerRemoteToFront_t>(),
-        1usize,
-        concat!("Alignment of ", stringify!(MusicPlayerRemoteToFront_t))
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct MusicPlayerWillQuit_t {
-    pub _address: u8,
-}
-pub const MusicPlayerWillQuit_t_k_iCallback: MusicPlayerWillQuit_t__bindgen_ty_1 =
-    MusicPlayerWillQuit_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum MusicPlayerWillQuit_t__bindgen_ty_1 {
-    k_iCallback = 4104,
-}
-#[test]
-fn bindgen_test_layout_MusicPlayerWillQuit_t() {
-    assert_eq!(
-        ::std::mem::size_of::<MusicPlayerWillQuit_t>(),
-        1usize,
-        concat!("Size of: ", stringify!(MusicPlayerWillQuit_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<MusicPlayerWillQuit_t>(),
-        1usize,
-        concat!("Alignment of ", stringify!(MusicPlayerWillQuit_t))
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct MusicPlayerWantsPlay_t {
-    pub _address: u8,
-}
-pub const MusicPlayerWantsPlay_t_k_iCallback: MusicPlayerWantsPlay_t__bindgen_ty_1 =
-    MusicPlayerWantsPlay_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum MusicPlayerWantsPlay_t__bindgen_ty_1 {
-    k_iCallback = 4105,
-}
-#[test]
-fn bindgen_test_layout_MusicPlayerWantsPlay_t() {
-    assert_eq!(
-        ::std::mem::size_of::<MusicPlayerWantsPlay_t>(),
-        1usize,
-        concat!("Size of: ", stringify!(MusicPlayerWantsPlay_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<MusicPlayerWantsPlay_t>(),
-        1usize,
-        concat!("Alignment of ", stringify!(MusicPlayerWantsPlay_t))
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct MusicPlayerWantsPause_t {
-    pub _address: u8,
-}
-pub const MusicPlayerWantsPause_t_k_iCallback: MusicPlayerWantsPause_t__bindgen_ty_1 =
-    MusicPlayerWantsPause_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum MusicPlayerWantsPause_t__bindgen_ty_1 {
-    k_iCallback = 4106,
-}
-#[test]
-fn bindgen_test_layout_MusicPlayerWantsPause_t() {
-    assert_eq!(
-        ::std::mem::size_of::<MusicPlayerWantsPause_t>(),
-        1usize,
-        concat!("Size of: ", stringify!(MusicPlayerWantsPause_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<MusicPlayerWantsPause_t>(),
-        1usize,
-        concat!("Alignment of ", stringify!(MusicPlayerWantsPause_t))
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct MusicPlayerWantsPlayPrevious_t {
-    pub _address: u8,
-}
-pub const MusicPlayerWantsPlayPrevious_t_k_iCallback: MusicPlayerWantsPlayPrevious_t__bindgen_ty_1 =
-    MusicPlayerWantsPlayPrevious_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum MusicPlayerWantsPlayPrevious_t__bindgen_ty_1 {
-    k_iCallback = 4107,
-}
-#[test]
-fn bindgen_test_layout_MusicPlayerWantsPlayPrevious_t() {
-    assert_eq!(
-        ::std::mem::size_of::<MusicPlayerWantsPlayPrevious_t>(),
-        1usize,
-        concat!("Size of: ", stringify!(MusicPlayerWantsPlayPrevious_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<MusicPlayerWantsPlayPrevious_t>(),
-        1usize,
-        concat!("Alignment of ", stringify!(MusicPlayerWantsPlayPrevious_t))
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct MusicPlayerWantsPlayNext_t {
-    pub _address: u8,
-}
-pub const MusicPlayerWantsPlayNext_t_k_iCallback: MusicPlayerWantsPlayNext_t__bindgen_ty_1 =
-    MusicPlayerWantsPlayNext_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum MusicPlayerWantsPlayNext_t__bindgen_ty_1 {
-    k_iCallback = 4108,
-}
-#[test]
-fn bindgen_test_layout_MusicPlayerWantsPlayNext_t() {
-    assert_eq!(
-        ::std::mem::size_of::<MusicPlayerWantsPlayNext_t>(),
-        1usize,
-        concat!("Size of: ", stringify!(MusicPlayerWantsPlayNext_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<MusicPlayerWantsPlayNext_t>(),
-        1usize,
-        concat!("Alignment of ", stringify!(MusicPlayerWantsPlayNext_t))
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct MusicPlayerWantsShuffled_t {
-    pub m_bShuffled: bool,
-}
-pub const MusicPlayerWantsShuffled_t_k_iCallback: MusicPlayerWantsShuffled_t__bindgen_ty_1 =
-    MusicPlayerWantsShuffled_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum MusicPlayerWantsShuffled_t__bindgen_ty_1 {
-    k_iCallback = 4109,
-}
-#[test]
-fn bindgen_test_layout_MusicPlayerWantsShuffled_t() {
-    const UNINIT: ::std::mem::MaybeUninit<MusicPlayerWantsShuffled_t> =
-        ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<MusicPlayerWantsShuffled_t>(),
-        1usize,
-        concat!("Size of: ", stringify!(MusicPlayerWantsShuffled_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<MusicPlayerWantsShuffled_t>(),
-        1usize,
-        concat!("Alignment of ", stringify!(MusicPlayerWantsShuffled_t))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_bShuffled) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(MusicPlayerWantsShuffled_t),
-            "::",
-            stringify!(m_bShuffled)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct MusicPlayerWantsLooped_t {
-    pub m_bLooped: bool,
-}
-pub const MusicPlayerWantsLooped_t_k_iCallback: MusicPlayerWantsLooped_t__bindgen_ty_1 =
-    MusicPlayerWantsLooped_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum MusicPlayerWantsLooped_t__bindgen_ty_1 {
-    k_iCallback = 4110,
-}
-#[test]
-fn bindgen_test_layout_MusicPlayerWantsLooped_t() {
-    const UNINIT: ::std::mem::MaybeUninit<MusicPlayerWantsLooped_t> =
-        ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<MusicPlayerWantsLooped_t>(),
-        1usize,
-        concat!("Size of: ", stringify!(MusicPlayerWantsLooped_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<MusicPlayerWantsLooped_t>(),
-        1usize,
-        concat!("Alignment of ", stringify!(MusicPlayerWantsLooped_t))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_bLooped) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(MusicPlayerWantsLooped_t),
-            "::",
-            stringify!(m_bLooped)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct MusicPlayerWantsVolume_t {
-    pub m_flNewVolume: f32,
-}
-pub const MusicPlayerWantsVolume_t_k_iCallback: MusicPlayerWantsVolume_t__bindgen_ty_1 =
-    MusicPlayerWantsVolume_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum MusicPlayerWantsVolume_t__bindgen_ty_1 {
-    k_iCallback = 4011,
-}
-#[test]
-fn bindgen_test_layout_MusicPlayerWantsVolume_t() {
-    const UNINIT: ::std::mem::MaybeUninit<MusicPlayerWantsVolume_t> =
-        ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<MusicPlayerWantsVolume_t>(),
-        4usize,
-        concat!("Size of: ", stringify!(MusicPlayerWantsVolume_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<MusicPlayerWantsVolume_t>(),
-        4usize,
-        concat!("Alignment of ", stringify!(MusicPlayerWantsVolume_t))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_flNewVolume) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(MusicPlayerWantsVolume_t),
-            "::",
-            stringify!(m_flNewVolume)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct MusicPlayerSelectsQueueEntry_t {
-    pub nID: ::std::os::raw::c_int,
-}
-pub const MusicPlayerSelectsQueueEntry_t_k_iCallback: MusicPlayerSelectsQueueEntry_t__bindgen_ty_1 =
-    MusicPlayerSelectsQueueEntry_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum MusicPlayerSelectsQueueEntry_t__bindgen_ty_1 {
-    k_iCallback = 4012,
-}
-#[test]
-fn bindgen_test_layout_MusicPlayerSelectsQueueEntry_t() {
-    const UNINIT: ::std::mem::MaybeUninit<MusicPlayerSelectsQueueEntry_t> =
-        ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<MusicPlayerSelectsQueueEntry_t>(),
-        4usize,
-        concat!("Size of: ", stringify!(MusicPlayerSelectsQueueEntry_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<MusicPlayerSelectsQueueEntry_t>(),
-        4usize,
-        concat!("Alignment of ", stringify!(MusicPlayerSelectsQueueEntry_t))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).nID) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(MusicPlayerSelectsQueueEntry_t),
-            "::",
-            stringify!(nID)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct MusicPlayerSelectsPlaylistEntry_t {
-    pub nID: ::std::os::raw::c_int,
-}
-pub const MusicPlayerSelectsPlaylistEntry_t_k_iCallback:
-    MusicPlayerSelectsPlaylistEntry_t__bindgen_ty_1 =
-    MusicPlayerSelectsPlaylistEntry_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum MusicPlayerSelectsPlaylistEntry_t__bindgen_ty_1 {
-    k_iCallback = 4013,
-}
-#[test]
-fn bindgen_test_layout_MusicPlayerSelectsPlaylistEntry_t() {
-    const UNINIT: ::std::mem::MaybeUninit<MusicPlayerSelectsPlaylistEntry_t> =
-        ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<MusicPlayerSelectsPlaylistEntry_t>(),
-        4usize,
-        concat!("Size of: ", stringify!(MusicPlayerSelectsPlaylistEntry_t))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<MusicPlayerSelectsPlaylistEntry_t>(),
-        4usize,
-        concat!(
-            "Alignment of ",
-            stringify!(MusicPlayerSelectsPlaylistEntry_t)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).nID) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(MusicPlayerSelectsPlaylistEntry_t),
-            "::",
-            stringify!(nID)
-        )
-    );
-}
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct MusicPlayerWantsPlayingRepeatStatus_t {
-    pub m_nPlayingRepeatStatus: ::std::os::raw::c_int,
-}
-pub const MusicPlayerWantsPlayingRepeatStatus_t_k_iCallback:
-    MusicPlayerWantsPlayingRepeatStatus_t__bindgen_ty_1 =
-    MusicPlayerWantsPlayingRepeatStatus_t__bindgen_ty_1::k_iCallback;
-#[repr(i32)]
-#[non_exhaustive]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum MusicPlayerWantsPlayingRepeatStatus_t__bindgen_ty_1 {
-    k_iCallback = 4114,
-}
-#[test]
-fn bindgen_test_layout_MusicPlayerWantsPlayingRepeatStatus_t() {
-    const UNINIT: ::std::mem::MaybeUninit<MusicPlayerWantsPlayingRepeatStatus_t> =
-        ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<MusicPlayerWantsPlayingRepeatStatus_t>(),
-        4usize,
-        concat!(
-            "Size of: ",
-            stringify!(MusicPlayerWantsPlayingRepeatStatus_t)
-        )
-    );
-    assert_eq!(
-        ::std::mem::align_of::<MusicPlayerWantsPlayingRepeatStatus_t>(),
-        4usize,
-        concat!(
-            "Alignment of ",
-            stringify!(MusicPlayerWantsPlayingRepeatStatus_t)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).m_nPlayingRepeatStatus) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(MusicPlayerWantsPlayingRepeatStatus_t),
-            "::",
-            stringify!(m_nPlayingRepeatStatus)
-        )
-    );
-}
 #[repr(i32)]
 #[non_exhaustive]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -11554,14 +10443,28 @@ pub enum EHTTPStatusCode {
     k_EHTTPStatusCode416RequestedRangeNotSatisfiable = 416,
     k_EHTTPStatusCode417ExpectationFailed = 417,
     k_EHTTPStatusCode4xxUnknown = 418,
+    k_EHTTPStatusCode421MisdirectedRequest = 421,
+    k_EHTTPStatusCode422UnprocessableContent = 422,
+    k_EHTTPStatusCode423Locked = 423,
+    k_EHTTPStatusCode424FailedDependency = 424,
+    k_EHTTPStatusCode425TooEarly = 425,
+    k_EHTTPStatusCode426UpgradeRequired = 426,
+    k_EHTTPStatusCode428PreconditionRequired = 428,
     k_EHTTPStatusCode429TooManyRequests = 429,
+    k_EHTTPStatusCode431RequestHeaderFieldsTooLarge = 431,
     k_EHTTPStatusCode444ConnectionClosed = 444,
+    k_EHTTPStatusCode451UnavailableForLegalReasons = 451,
     k_EHTTPStatusCode500InternalServerError = 500,
     k_EHTTPStatusCode501NotImplemented = 501,
     k_EHTTPStatusCode502BadGateway = 502,
     k_EHTTPStatusCode503ServiceUnavailable = 503,
     k_EHTTPStatusCode504GatewayTimeout = 504,
     k_EHTTPStatusCode505HTTPVersionNotSupported = 505,
+    k_EHTTPStatusCode506VariantAlsoNegotiates = 506,
+    k_EHTTPStatusCode507InsufficientStorage = 507,
+    k_EHTTPStatusCode508LoopDetected = 508,
+    k_EHTTPStatusCode510NotExtended = 510,
+    k_EHTTPStatusCode511NetworkAuthenticationRequired = 511,
     k_EHTTPStatusCode5xxUnknown = 599,
 }
 pub type HTTPRequestHandle = uint32;
@@ -12227,7 +11130,92 @@ pub enum EInputActionOrigin {
     k_EInputActionOrigin_Horipad_M2 = 407,
     k_EInputActionOrigin_Horipad_L4 = 408,
     k_EInputActionOrigin_Horipad_R4 = 409,
-    k_EInputActionOrigin_Count = 410,
+    k_EInputActionOrigin_LenovoLegionGo_A = 410,
+    k_EInputActionOrigin_LenovoLegionGo_B = 411,
+    k_EInputActionOrigin_LenovoLegionGo_X = 412,
+    k_EInputActionOrigin_LenovoLegionGo_Y = 413,
+    k_EInputActionOrigin_LenovoLegionGo_LB = 414,
+    k_EInputActionOrigin_LenovoLegionGo_RB = 415,
+    k_EInputActionOrigin_LenovoLegionGo_Menu = 416,
+    k_EInputActionOrigin_LenovoLegionGo_View = 417,
+    k_EInputActionOrigin_LenovoLegionGo_LeftPad_Touch = 418,
+    k_EInputActionOrigin_LenovoLegionGo_LeftPad_Swipe = 419,
+    k_EInputActionOrigin_LenovoLegionGo_LeftPad_Click = 420,
+    k_EInputActionOrigin_LenovoLegionGo_LeftPad_DPadNorth = 421,
+    k_EInputActionOrigin_LenovoLegionGo_LeftPad_DPadSouth = 422,
+    k_EInputActionOrigin_LenovoLegionGo_LeftPad_DPadWest = 423,
+    k_EInputActionOrigin_LenovoLegionGo_LeftPad_DPadEast = 424,
+    k_EInputActionOrigin_LenovoLegionGo_RightPad_Touch = 425,
+    k_EInputActionOrigin_LenovoLegionGo_RightPad_Swipe = 426,
+    k_EInputActionOrigin_LenovoLegionGo_RightPad_Click = 427,
+    k_EInputActionOrigin_LenovoLegionGo_RightPad_DPadNorth = 428,
+    k_EInputActionOrigin_LenovoLegionGo_RightPad_DPadSouth = 429,
+    k_EInputActionOrigin_LenovoLegionGo_RightPad_DPadWest = 430,
+    k_EInputActionOrigin_LenovoLegionGo_RightPad_DPadEast = 431,
+    k_EInputActionOrigin_LenovoLegionGo_LT_SoftPull = 432,
+    k_EInputActionOrigin_LenovoLegionGo_LT = 433,
+    k_EInputActionOrigin_LenovoLegionGo_RT_SoftPull = 434,
+    k_EInputActionOrigin_LenovoLegionGo_RT = 435,
+    k_EInputActionOrigin_LenovoLegionGo_LeftStick_Move = 436,
+    k_EInputActionOrigin_LenovoLegionGo_LS = 437,
+    k_EInputActionOrigin_LenovoLegionGo_LeftStick_DPadNorth = 438,
+    k_EInputActionOrigin_LenovoLegionGo_LeftStick_DPadSouth = 439,
+    k_EInputActionOrigin_LenovoLegionGo_LeftStick_DPadWest = 440,
+    k_EInputActionOrigin_LenovoLegionGo_LeftStick_DPadEast = 441,
+    k_EInputActionOrigin_LenovoLegionGo_RightStick_Move = 442,
+    k_EInputActionOrigin_LenovoLegionGo_RS = 443,
+    k_EInputActionOrigin_LenovoLegionGo_RightStick_DPadNorth = 444,
+    k_EInputActionOrigin_LenovoLegionGo_RightStick_DPadSouth = 445,
+    k_EInputActionOrigin_LenovoLegionGo_RightStick_DPadWest = 446,
+    k_EInputActionOrigin_LenovoLegionGo_RightStick_DPadEast = 447,
+    k_EInputActionOrigin_LenovoLegionGo_Y1 = 448,
+    k_EInputActionOrigin_LenovoLegionGo_Y2 = 449,
+    k_EInputActionOrigin_LenovoLegionGo_DPad_Move = 450,
+    k_EInputActionOrigin_LenovoLegionGo_DPad_North = 451,
+    k_EInputActionOrigin_LenovoLegionGo_DPad_South = 452,
+    k_EInputActionOrigin_LenovoLegionGo_DPad_West = 453,
+    k_EInputActionOrigin_LenovoLegionGo_DPad_East = 454,
+    k_EInputActionOrigin_LenovoLegionGo_Gyro_Move = 455,
+    k_EInputActionOrigin_LenovoLegionGo_Gyro_Pitch = 456,
+    k_EInputActionOrigin_LenovoLegionGo_Gyro_Yaw = 457,
+    k_EInputActionOrigin_LenovoLegionGo_Gyro_Roll = 458,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved1 = 459,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved2 = 460,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved3 = 461,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved4 = 462,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved5 = 463,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved6 = 464,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved7 = 465,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved8 = 466,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved9 = 467,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved10 = 468,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved11 = 469,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved12 = 470,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved13 = 471,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved14 = 472,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved15 = 473,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved16 = 474,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved17 = 475,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved18 = 476,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved19 = 477,
+    k_EInputActionOrigin_LenovoLegionGo_Reserved20 = 478,
+    k_EInputActionOrigin_Generic_L4 = 479,
+    k_EInputActionOrigin_Generic_R4 = 480,
+    k_EInputActionOrigin_Generic_L5 = 481,
+    k_EInputActionOrigin_Generic_R5 = 482,
+    k_EInputActionOrigin_Generic_PL = 483,
+    k_EInputActionOrigin_Generic_PR = 484,
+    k_EInputActionOrigin_Generic_C = 485,
+    k_EInputActionOrigin_Generic_Z = 486,
+    k_EInputActionOrigin_Generic_MISC1 = 487,
+    k_EInputActionOrigin_Generic_MISC2 = 488,
+    k_EInputActionOrigin_Generic_MISC3 = 489,
+    k_EInputActionOrigin_Generic_MISC4 = 490,
+    k_EInputActionOrigin_Generic_MISC5 = 491,
+    k_EInputActionOrigin_Generic_MISC6 = 492,
+    k_EInputActionOrigin_Generic_MISC7 = 493,
+    k_EInputActionOrigin_Generic_MISC8 = 494,
+    k_EInputActionOrigin_Count = 495,
     k_EInputActionOrigin_MaximumPossibleValue = 32767,
 }
 #[repr(i32)]
@@ -13468,7 +12456,92 @@ pub enum EControllerActionOrigin {
     k_EControllerActionOrigin_Horipad_M2 = 387,
     k_EControllerActionOrigin_Horipad_L4 = 388,
     k_EControllerActionOrigin_Horipad_R4 = 389,
-    k_EControllerActionOrigin_Count = 390,
+    k_EControllerActionOrigin_LenovoLegionGo_A = 390,
+    k_EControllerActionOrigin_LenovoLegionGo_B = 391,
+    k_EControllerActionOrigin_LenovoLegionGo_X = 392,
+    k_EControllerActionOrigin_LenovoLegionGo_Y = 393,
+    k_EControllerActionOrigin_LenovoLegionGo_LB = 394,
+    k_EControllerActionOrigin_LenovoLegionGo_RB = 395,
+    k_EControllerActionOrigin_LenovoLegionGo_Menu = 396,
+    k_EControllerActionOrigin_LenovoLegionGo_View = 397,
+    k_EControllerActionOrigin_LenovoLegionGo_LeftPad_Touch = 398,
+    k_EControllerActionOrigin_LenovoLegionGo_LeftPad_Swipe = 399,
+    k_EControllerActionOrigin_LenovoLegionGo_LeftPad_Click = 400,
+    k_EControllerActionOrigin_LenovoLegionGo_LeftPad_DPadNorth = 401,
+    k_EControllerActionOrigin_LenovoLegionGo_LeftPad_DPadSouth = 402,
+    k_EControllerActionOrigin_LenovoLegionGo_LeftPad_DPadWest = 403,
+    k_EControllerActionOrigin_LenovoLegionGo_LeftPad_DPadEast = 404,
+    k_EControllerActionOrigin_LenovoLegionGo_RightPad_Touch = 405,
+    k_EControllerActionOrigin_LenovoLegionGo_RightPad_Swipe = 406,
+    k_EControllerActionOrigin_LenovoLegionGo_RightPad_Click = 407,
+    k_EControllerActionOrigin_LenovoLegionGo_RightPad_DPadNorth = 408,
+    k_EControllerActionOrigin_LenovoLegionGo_RightPad_DPadSouth = 409,
+    k_EControllerActionOrigin_LenovoLegionGo_RightPad_DPadWest = 410,
+    k_EControllerActionOrigin_LenovoLegionGo_RightPad_DPadEast = 411,
+    k_EControllerActionOrigin_LenovoLegionGo_LT_SoftPull = 412,
+    k_EControllerActionOrigin_LenovoLegionGo_LT = 413,
+    k_EControllerActionOrigin_LenovoLegionGo_RT_SoftPull = 414,
+    k_EControllerActionOrigin_LenovoLegionGo_RT = 415,
+    k_EControllerActionOrigin_LenovoLegionGo_LeftStick_Move = 416,
+    k_EControllerActionOrigin_LenovoLegionGo_LS = 417,
+    k_EControllerActionOrigin_LenovoLegionGo_LeftStick_DPadNorth = 418,
+    k_EControllerActionOrigin_LenovoLegionGo_LeftStick_DPadSouth = 419,
+    k_EControllerActionOrigin_LenovoLegionGo_LeftStick_DPadWest = 420,
+    k_EControllerActionOrigin_LenovoLegionGo_LeftStick_DPadEast = 421,
+    k_EControllerActionOrigin_LenovoLegionGo_RightStick_Move = 422,
+    k_EControllerActionOrigin_LenovoLegionGo_RS = 423,
+    k_EControllerActionOrigin_LenovoLegionGo_RightStick_DPadNorth = 424,
+    k_EControllerActionOrigin_LenovoLegionGo_RightStick_DPadSouth = 425,
+    k_EControllerActionOrigin_LenovoLegionGo_RightStick_DPadWest = 426,
+    k_EControllerActionOrigin_LenovoLegionGo_RightStick_DPadEast = 427,
+    k_EControllerActionOrigin_LenovoLegionGo_Y1 = 428,
+    k_EControllerActionOrigin_LenovoLegionGo_Y2 = 429,
+    k_EControllerActionOrigin_LenovoLegionGo_DPad_Move = 430,
+    k_EControllerActionOrigin_LenovoLegionGo_DPad_North = 431,
+    k_EControllerActionOrigin_LenovoLegionGo_DPad_South = 432,
+    k_EControllerActionOrigin_LenovoLegionGo_DPad_West = 433,
+    k_EControllerActionOrigin_LenovoLegionGo_DPad_East = 434,
+    k_EControllerActionOrigin_LenovoLegionGo_Gyro_Move = 435,
+    k_EControllerActionOrigin_LenovoLegionGo_Gyro_Pitch = 436,
+    k_EControllerActionOrigin_LenovoLegionGo_Gyro_Yaw = 437,
+    k_EControllerActionOrigin_LenovoLegionGo_Gyro_Roll = 438,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved1 = 439,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved2 = 440,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved3 = 441,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved4 = 442,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved5 = 443,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved6 = 444,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved7 = 445,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved8 = 446,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved9 = 447,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved10 = 448,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved11 = 449,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved12 = 450,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved13 = 451,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved14 = 452,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved15 = 453,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved16 = 454,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved17 = 455,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved18 = 456,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved19 = 457,
+    k_EControllerActionOrigin_LenovoLegionGo_Reserved20 = 458,
+    k_EControllerActionOrigin_Generic_L4 = 459,
+    k_EControllerActionOrigin_Generic_R4 = 460,
+    k_EControllerActionOrigin_Generic_L5 = 461,
+    k_EControllerActionOrigin_Generic_R5 = 462,
+    k_EControllerActionOrigin_Generic_PL = 463,
+    k_EControllerActionOrigin_Generic_PR = 464,
+    k_EControllerActionOrigin_Generic_C = 465,
+    k_EControllerActionOrigin_Generic_Z = 466,
+    k_EControllerActionOrigin_Generic_MISC1 = 467,
+    k_EControllerActionOrigin_Generic_MISC2 = 468,
+    k_EControllerActionOrigin_Generic_MISC3 = 469,
+    k_EControllerActionOrigin_Generic_MISC4 = 470,
+    k_EControllerActionOrigin_Generic_MISC5 = 471,
+    k_EControllerActionOrigin_Generic_MISC6 = 472,
+    k_EControllerActionOrigin_Generic_MISC7 = 473,
+    k_EControllerActionOrigin_Generic_MISC8 = 474,
+    k_EControllerActionOrigin_Count = 475,
     k_EControllerActionOrigin_MaximumPossibleValue = 32767,
 }
 #[repr(i32)]
@@ -17825,6 +16898,22 @@ pub enum ERemotePlayScancode {
     k_ERemotePlayScancodeLeft = 80,
     k_ERemotePlayScancodeDown = 81,
     k_ERemotePlayScancodeUp = 82,
+    k_ERemotePlayScancodeKeypadDivide = 84,
+    k_ERemotePlayScancodeKeypadMultiply = 85,
+    k_ERemotePlayScancodeKeypadMinus = 86,
+    k_ERemotePlayScancodeKeypadPlus = 87,
+    k_ERemotePlayScancodeKeypadEnter = 88,
+    k_ERemotePlayScancodeKeypad1 = 89,
+    k_ERemotePlayScancodeKeypad2 = 90,
+    k_ERemotePlayScancodeKeypad3 = 91,
+    k_ERemotePlayScancodeKeypad4 = 92,
+    k_ERemotePlayScancodeKeypad5 = 93,
+    k_ERemotePlayScancodeKeypad6 = 94,
+    k_ERemotePlayScancodeKeypad7 = 95,
+    k_ERemotePlayScancodeKeypad8 = 96,
+    k_ERemotePlayScancodeKeypad9 = 97,
+    k_ERemotePlayScancodeKeypad0 = 98,
+    k_ERemotePlayScancodeKeypadPeriod = 99,
     k_ERemotePlayScancodeLeftControl = 224,
     k_ERemotePlayScancodeLeftShift = 225,
     k_ERemotePlayScancodeLeftAlt = 226,
@@ -21416,14 +20505,6 @@ extern "C" {
     ) -> *mut ISteamScreenshots;
 }
 extern "C" {
-    pub fn SteamAPI_ISteamClient_GetISteamGameSearch(
-        self_: *mut ISteamClient,
-        hSteamuser: HSteamUser,
-        hSteamPipe: HSteamPipe,
-        pchVersion: *const ::std::os::raw::c_char,
-    ) -> *mut ISteamGameSearch;
-}
-extern "C" {
     pub fn SteamAPI_ISteamClient_GetIPCCallCount(self_: *mut ISteamClient) -> uint32;
 }
 extern "C" {
@@ -21466,14 +20547,6 @@ extern "C" {
         hSteamPipe: HSteamPipe,
         pchVersion: *const ::std::os::raw::c_char,
     ) -> *mut ISteamMusic;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamClient_GetISteamMusicRemote(
-        self_: *mut ISteamClient,
-        hSteamuser: HSteamUser,
-        hSteamPipe: HSteamPipe,
-        pchVersion: *const ::std::os::raw::c_char,
-    ) -> *mut ISteamMusicRemote;
 }
 extern "C" {
     pub fn SteamAPI_ISteamClient_GetISteamHTMLSurface(
@@ -22891,101 +21964,6 @@ extern "C" {
     );
 }
 extern "C" {
-    pub fn SteamAPI_SteamGameSearch_v001() -> *mut ISteamGameSearch;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamGameSearch_AddGameSearchParams(
-        self_: *mut ISteamGameSearch,
-        pchKeyToFind: *const ::std::os::raw::c_char,
-        pchValuesToFind: *const ::std::os::raw::c_char,
-    ) -> EGameSearchErrorCode_t;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamGameSearch_SearchForGameWithLobby(
-        self_: *mut ISteamGameSearch,
-        steamIDLobby: uint64_steamid,
-        nPlayerMin: ::std::os::raw::c_int,
-        nPlayerMax: ::std::os::raw::c_int,
-    ) -> EGameSearchErrorCode_t;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamGameSearch_SearchForGameSolo(
-        self_: *mut ISteamGameSearch,
-        nPlayerMin: ::std::os::raw::c_int,
-        nPlayerMax: ::std::os::raw::c_int,
-    ) -> EGameSearchErrorCode_t;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamGameSearch_AcceptGame(
-        self_: *mut ISteamGameSearch,
-    ) -> EGameSearchErrorCode_t;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamGameSearch_DeclineGame(
-        self_: *mut ISteamGameSearch,
-    ) -> EGameSearchErrorCode_t;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamGameSearch_RetrieveConnectionDetails(
-        self_: *mut ISteamGameSearch,
-        steamIDHost: uint64_steamid,
-        pchConnectionDetails: *mut ::std::os::raw::c_char,
-        cubConnectionDetails: ::std::os::raw::c_int,
-    ) -> EGameSearchErrorCode_t;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamGameSearch_EndGameSearch(
-        self_: *mut ISteamGameSearch,
-    ) -> EGameSearchErrorCode_t;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamGameSearch_SetGameHostParams(
-        self_: *mut ISteamGameSearch,
-        pchKey: *const ::std::os::raw::c_char,
-        pchValue: *const ::std::os::raw::c_char,
-    ) -> EGameSearchErrorCode_t;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamGameSearch_SetConnectionDetails(
-        self_: *mut ISteamGameSearch,
-        pchConnectionDetails: *const ::std::os::raw::c_char,
-        cubConnectionDetails: ::std::os::raw::c_int,
-    ) -> EGameSearchErrorCode_t;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamGameSearch_RequestPlayersForGame(
-        self_: *mut ISteamGameSearch,
-        nPlayerMin: ::std::os::raw::c_int,
-        nPlayerMax: ::std::os::raw::c_int,
-        nMaxTeamSize: ::std::os::raw::c_int,
-    ) -> EGameSearchErrorCode_t;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamGameSearch_HostConfirmGameStart(
-        self_: *mut ISteamGameSearch,
-        ullUniqueGameID: uint64,
-    ) -> EGameSearchErrorCode_t;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamGameSearch_CancelRequestPlayersForGame(
-        self_: *mut ISteamGameSearch,
-    ) -> EGameSearchErrorCode_t;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamGameSearch_SubmitPlayerResult(
-        self_: *mut ISteamGameSearch,
-        ullUniqueGameID: uint64,
-        steamIDPlayer: uint64_steamid,
-        EPlayerResult: EPlayerResult_t,
-    ) -> EGameSearchErrorCode_t;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamGameSearch_EndGame(
-        self_: *mut ISteamGameSearch,
-        ullUniqueGameID: uint64,
-    ) -> EGameSearchErrorCode_t;
-}
-extern "C" {
     pub fn SteamAPI_SteamParties_v002() -> *mut ISteamParties;
 }
 extern "C" {
@@ -24231,180 +23209,6 @@ extern "C" {
 }
 extern "C" {
     pub fn SteamAPI_ISteamMusic_GetVolume(self_: *mut ISteamMusic) -> f32;
-}
-extern "C" {
-    pub fn SteamAPI_SteamMusicRemote_v001() -> *mut ISteamMusicRemote;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_RegisterSteamMusicRemote(
-        self_: *mut ISteamMusicRemote,
-        pchName: *const ::std::os::raw::c_char,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_DeregisterSteamMusicRemote(
-        self_: *mut ISteamMusicRemote,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_BIsCurrentMusicRemote(self_: *mut ISteamMusicRemote) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_BActivationSuccess(
-        self_: *mut ISteamMusicRemote,
-        bValue: bool,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_SetDisplayName(
-        self_: *mut ISteamMusicRemote,
-        pchDisplayName: *const ::std::os::raw::c_char,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_SetPNGIcon_64x64(
-        self_: *mut ISteamMusicRemote,
-        pvBuffer: *mut ::std::os::raw::c_void,
-        cbBufferLength: uint32,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_EnablePlayPrevious(
-        self_: *mut ISteamMusicRemote,
-        bValue: bool,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_EnablePlayNext(
-        self_: *mut ISteamMusicRemote,
-        bValue: bool,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_EnableShuffled(
-        self_: *mut ISteamMusicRemote,
-        bValue: bool,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_EnableLooped(
-        self_: *mut ISteamMusicRemote,
-        bValue: bool,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_EnableQueue(
-        self_: *mut ISteamMusicRemote,
-        bValue: bool,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_EnablePlaylists(
-        self_: *mut ISteamMusicRemote,
-        bValue: bool,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_UpdatePlaybackStatus(
-        self_: *mut ISteamMusicRemote,
-        nStatus: AudioPlayback_Status,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_UpdateShuffled(
-        self_: *mut ISteamMusicRemote,
-        bValue: bool,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_UpdateLooped(
-        self_: *mut ISteamMusicRemote,
-        bValue: bool,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_UpdateVolume(
-        self_: *mut ISteamMusicRemote,
-        flValue: f32,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_CurrentEntryWillChange(self_: *mut ISteamMusicRemote)
-        -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_CurrentEntryIsAvailable(
-        self_: *mut ISteamMusicRemote,
-        bAvailable: bool,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_UpdateCurrentEntryText(
-        self_: *mut ISteamMusicRemote,
-        pchText: *const ::std::os::raw::c_char,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_UpdateCurrentEntryElapsedSeconds(
-        self_: *mut ISteamMusicRemote,
-        nValue: ::std::os::raw::c_int,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_UpdateCurrentEntryCoverArt(
-        self_: *mut ISteamMusicRemote,
-        pvBuffer: *mut ::std::os::raw::c_void,
-        cbBufferLength: uint32,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_CurrentEntryDidChange(self_: *mut ISteamMusicRemote) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_QueueWillChange(self_: *mut ISteamMusicRemote) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_ResetQueueEntries(self_: *mut ISteamMusicRemote) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_SetQueueEntry(
-        self_: *mut ISteamMusicRemote,
-        nID: ::std::os::raw::c_int,
-        nPosition: ::std::os::raw::c_int,
-        pchEntryText: *const ::std::os::raw::c_char,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_SetCurrentQueueEntry(
-        self_: *mut ISteamMusicRemote,
-        nID: ::std::os::raw::c_int,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_QueueDidChange(self_: *mut ISteamMusicRemote) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_PlaylistWillChange(self_: *mut ISteamMusicRemote) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_ResetPlaylistEntries(self_: *mut ISteamMusicRemote) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_SetPlaylistEntry(
-        self_: *mut ISteamMusicRemote,
-        nID: ::std::os::raw::c_int,
-        nPosition: ::std::os::raw::c_int,
-        pchEntryText: *const ::std::os::raw::c_char,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_SetCurrentPlaylistEntry(
-        self_: *mut ISteamMusicRemote,
-        nID: ::std::os::raw::c_int,
-    ) -> bool;
-}
-extern "C" {
-    pub fn SteamAPI_ISteamMusicRemote_PlaylistDidChange(self_: *mut ISteamMusicRemote) -> bool;
 }
 extern "C" {
     pub fn SteamAPI_SteamHTTP_v003() -> *mut ISteamHTTP;

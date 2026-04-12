@@ -1,7 +1,7 @@
 use macroquad::prelude::*;
 use std::time::Instant;
 use steamworks::{
-    networking_sockets::{ListenSocket, NetConnection, NetworkingSockets},
+    networking_sockets::{ListenSocket, NetConnection},
     networking_types::{
         ListenSocketEvent, NetworkingConnectionState, NetworkingIdentity, SendFlags,
     },

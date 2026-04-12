@@ -1,10 +1,4 @@
-use std::collections::HashMap;
-
 use macroquad::prelude::*;
-use steamworks::{
-    networking_types::{NetworkingIdentity, SendFlags},
-    FriendFlags, Friends,
-};
 
 mod states;
 
